@@ -135,6 +135,10 @@ public:
 
     void printReprojectionError(list<KeyFrame*> &lpLocalWindowKFs, KeyFrame* mpCurrentKF, string &name, string &name_folder);
 
+    bool IsFreezed();
+
+    void RemoveOldestKF();
+
     vector<KeyFrame*> mvpKeyFrameOrigins;
     vector<unsigned long int> mvBackupKeyFrameOriginsId;
     KeyFrame* mpFirstRegionKF;
@@ -200,6 +204,8 @@ protected:
 
     // Mutex
     std::mutex mMutexMap;
+
+    bool mbFreeze;
 
 };
 
