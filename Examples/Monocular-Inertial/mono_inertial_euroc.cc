@@ -29,6 +29,8 @@
 #include<System.h>
 #include "ImuTypes.h"
 
+#include "MemoryMonitor.h"
+
 using namespace std;
 
 void LoadImages(const string &strImagePath, const string &strPathTimes,
@@ -39,7 +41,6 @@ void LoadIMU(const string &strImuPath, vector<double> &vTimeStamps, vector<cv::P
 double ttrack_tot = 0;
 int main(int argc, char *argv[])
 {
-
     if(argc < 5)
     {
         cerr << endl << "Usage: ./mono_inertial_euroc path_to_vocabulary path_to_settings path_to_sequence_folder_1 path_to_times_file_1 (path_to_image_folder_2 path_to_times_file_2 ... path_to_image_folder_N path_to_times_file_N) " << endl;
@@ -189,7 +190,6 @@ int main(int argc, char *argv[])
     #else
             std::chrono::monotonic_clock::time_point t1 = std::chrono::monotonic_clock::now();
     #endif
-
             // Pass the image to the SLAM system
             // cout << "tframe = " << tframe << endl;
             SLAM.TrackMonocular(im,tframe,vImuMeas); // TODO change to monocular_inertial
@@ -204,6 +204,10 @@ int main(int argc, char *argv[])
             t_track = t_resize + std::chrono::duration_cast<std::chrono::duration<double,std::milli> >(t2 - t1).count();
             SLAM.InsertTrackTime(t_track);
 #endif
+            double vm;
+            double rss;
+            getCurrentProcessMemory(vm,rss);
+            cout << "Virtual Memory: " << vm << "\nResident set size: " << rss << endl;
 
             double ttrack= std::chrono::duration_cast<std::chrono::duration<double> >(t2 - t1).count();
             ttrack_tot += ttrack;
