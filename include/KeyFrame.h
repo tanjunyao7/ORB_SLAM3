@@ -377,6 +377,9 @@ public:
     // Number of KeyPoints
     const int N;
 
+    // MapPoints associated to keypoints
+    std::vector<MapPoint*> mvpMapPoints;
+
     // KeyPoints, stereo coordinate and descriptors (all associated by an index)
     const std::vector<cv::KeyPoint> mvKeys;
     const std::vector<cv::KeyPoint> mvKeysUn;
@@ -445,8 +448,7 @@ protected:
     // Imu bias
     IMU::Bias mImuBias;
 
-    // MapPoints associated to keypoints
-    std::vector<MapPoint*> mvpMapPoints;
+
     // For save relation without pointer, this is necessary for save/load function
     std::vector<long long int> mvBackupMapPointsId;
 

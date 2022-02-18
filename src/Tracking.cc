@@ -28,6 +28,7 @@
 #include "KannalaBrandt8.h"
 #include "MLPnPsolver.h"
 #include "GeometricTools.h"
+#include "GarbageCollector.h"
 
 #include <iostream>
 
@@ -3507,6 +3508,9 @@ void Tracking::UpdateLocalKeyFrames()
     int max=0;
     KeyFrame* pKFmax= static_cast<KeyFrame*>(NULL);
 
+    for(auto kf: mvpLocalKeyFrames)
+        if(kf->isBad())
+            PrepareForDeleting<KeyFrame,2>(kf,std::this_thread::get_id());
     mvpLocalKeyFrames.clear();
     mvpLocalKeyFrames.reserve(3*keyframeCounter.size());
 

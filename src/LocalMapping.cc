@@ -23,9 +23,11 @@
 #include "Optimizer.h"
 #include "Converter.h"
 #include "GeometricTools.h"
+#include "GarbageCollector.h"
 
 #include<mutex>
 #include<chrono>
+#include "glog/logging.h"
 
 namespace ORB_SLAM3
 {
@@ -319,6 +321,7 @@ void LocalMapping::ProcessNewKeyFrame()
                 if(!pMP->IsInKeyFrame(mpCurrentKeyFrame))
                 {
                     pMP->AddObservation(mpCurrentKeyFrame, i);
+                    LOG(INFO)<<"add MP: "<<pMP->mnId<<" KF: "<<mpCurrentKeyFrame->mnId;
                     pMP->UpdateNormalAndDepth();
                     pMP->ComputeDistinctiveDescriptors();
                 }
@@ -700,6 +703,9 @@ void LocalMapping::CreateNewMapPoints()
 
             mpCurrentKeyFrame->AddMapPoint(pMP,idx1);
             pKF2->AddMapPoint(pMP,idx2);
+            LOG(INFO)<<"add MP: "<<pMP->mnId<<" KF:"<<pKF2->mnId<<std::endl;
+            LOG(INFO)<<"add MP: "<<pMP->mnId<<" KF:"<<mpCurrentKeyFrame->mnId<<std::endl;
+
 
             pMP->ComputeDistinctiveDescriptors();
 
@@ -1029,6 +1035,7 @@ void LocalMapping::KeyFrameCulling()
                         pKF->mNextKF = NULL;
                         pKF->mPrevKF = NULL;
                         pKF->SetBadFlag();
+                        PrepareForDeleting<KeyFrame,2>(pKF,std::this_thread::get_id());
                     }
                     else if(!mpCurrentKeyFrame->GetMap()->GetIniertialBA2() && ((pKF->GetImuPosition()-pKF->mPrevKF->GetImuPosition()).norm()<0.02) && (t<3))
                     {
@@ -1038,12 +1045,14 @@ void LocalMapping::KeyFrameCulling()
                         pKF->mNextKF = NULL;
                         pKF->mPrevKF = NULL;
                         pKF->SetBadFlag();
+                        PrepareForDeleting<KeyFrame,2>(pKF,std::this_thread::get_id());
                     }
                 }
             }
             else
             {
                 pKF->SetBadFlag();
+                PrepareForDeleting<KeyFrame,2>(pKF,std::this_thread::get_id());
             }
         }
         if((count > 20 && mbAbortBA) || count>100)

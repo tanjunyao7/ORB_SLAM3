@@ -36,6 +36,7 @@
 #include "Thirdparty/g2o/g2o/solvers/linear_solver_dense.h"
 #include "G2oTypes.h"
 #include "Converter.h"
+#include "glog/logging.h"
 
 #include<mutex>
 
@@ -1471,6 +1472,7 @@ void Optimizer::LocalBundleAdjustment(KeyFrame *pKF, bool* pbStopFlag, Map* pMap
             MapPoint* pMPi = vToErase[i].second;
             pKFi->EraseMapPointMatch(pMPi);
             pMPi->EraseObservation(pKFi);
+            LOG(INFO)<<"erase MP: "<<pMPi->mnId<<" KF:"<<pKFi->mnId<<std::endl;
         }
     }
 
@@ -2904,6 +2906,7 @@ void Optimizer::LocalInertialBA(KeyFrame *pKF, bool *pbStopFlag, Map *pMap, int&
             MapPoint* pMPi = vToErase[i].second;
             pKFi->EraseMapPointMatch(pMPi);
             pMPi->EraseObservation(pKFi);
+            LOG(INFO)<<"erase MP: "<<pMPi->mnId<<" KF:"<<pKFi->mnId<<std::endl;
         }
     }
 
@@ -3832,6 +3835,7 @@ void Optimizer::LocalBundleAdjustment(KeyFrame* pMainKF,vector<KeyFrame*> vpAdju
             MapPoint* pMPi = vToErase[i].second;
             pKFi->EraseMapPointMatch(pMPi);
             pMPi->EraseObservation(pKFi);
+            LOG(INFO)<<"erase MP: "<<pMPi->mnId<<" KF:"<<pKFi->mnId<<std::endl;
         }
     }
     for(unsigned int i=0; i < vpMPs.size(); ++i)
@@ -4422,6 +4426,7 @@ void Optimizer::MergeInertialBA(KeyFrame* pCurrKF, KeyFrame* pMergeKF, bool *pbS
             MapPoint* pMPi = vToErase[i].second;
             pKFi->EraseMapPointMatch(pMPi);
             pMPi->EraseObservation(pKFi);
+            LOG(INFO)<<"erase MP: "<<pMPi->mnId<<" KF:"<<pKFi->mnId<<std::endl;
         }
     }
 

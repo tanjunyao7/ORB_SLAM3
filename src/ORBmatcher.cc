@@ -26,6 +26,7 @@
 #include "Thirdparty/DBoW2/DBoW2/FeatureVector.h"
 
 #include<stdint-gcc.h>
+#include "glog/logging.h"
 
 using namespace std;
 
@@ -1326,6 +1327,8 @@ namespace ORB_SLAM3
                 {
                     pMP->AddObservation(pKF,bestIdx);
                     pKF->AddMapPoint(pMP,bestIdx);
+                    LOG(INFO)<<"add MP: "<<pMP->mnId<<" KF: "<<pKF->mnId;
+
                 }
                 nFused++;
             }
@@ -1446,6 +1449,7 @@ namespace ORB_SLAM3
                 {
                     pMP->AddObservation(pKF,bestIdx);
                     pKF->AddMapPoint(pMP,bestIdx);
+                    LOG(INFO)<<"add MP: "<<pMP->mnId<<" KF: "<<pKF->mnId;
                 }
                 nFused++;
             }

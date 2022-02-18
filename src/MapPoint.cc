@@ -18,6 +18,7 @@
 
 #include "MapPoint.h"
 #include "ORBmatcher.h"
+#include "glog/logging.h"
 
 #include<mutex>
 
@@ -140,6 +141,7 @@ KeyFrame* MapPoint::GetReferenceKeyFrame()
 
 void MapPoint::AddObservation(KeyFrame* pKF, int idx)
 {
+//    std::cout<<"MP "<<this<<" add observation in "<<pKF<<std::endl;
     unique_lock<mutex> lock(mMutexFeatures);
     tuple<int,int> indexes;
 
@@ -167,6 +169,7 @@ void MapPoint::AddObservation(KeyFrame* pKF, int idx)
 
 void MapPoint::EraseObservation(KeyFrame* pKF)
 {
+//    std::cout<<"MP "<<this<<" erase observation in "<<pKF<<std::endl;
     bool bBad=false;
     {
         unique_lock<mutex> lock(mMutexFeatures);
@@ -229,9 +232,13 @@ void MapPoint::SetBadFlag()
         int leftIndex = get<0>(mit -> second), rightIndex = get<1>(mit -> second);
         if(leftIndex != -1){
             pKF->EraseMapPointMatch(leftIndex);
+            LOG(INFO)<<"erase MP: "<<mnId<<" KF: "<<pKF->mnId;
+
         }
         if(rightIndex != -1){
             pKF->EraseMapPointMatch(rightIndex);
+            LOG(INFO)<<"erase MP: "<<mnId<<" KF: "<<pKF->mnId;
+
         }
     }
 
@@ -276,19 +283,29 @@ void MapPoint::Replace(MapPoint* pMP)
             if(leftIndex != -1){
                 pKF->ReplaceMapPointMatch(leftIndex, pMP);
                 pMP->AddObservation(pKF,leftIndex);
+                LOG(INFO)<<"erase MP: "<<mnId<<" KF: "<<pKF->mnId;
+                LOG(INFO)<<"add MP: "<<pMP->mnId<<" KF: "<<pKF->mnId;
+
             }
             if(rightIndex != -1){
                 pKF->ReplaceMapPointMatch(rightIndex, pMP);
                 pMP->AddObservation(pKF,rightIndex);
+                LOG(INFO)<<"erase MP: "<<mnId<<" KF: "<<pKF->mnId;
+                LOG(INFO)<<"add MP: "<<pMP->mnId<<" KF: "<<pKF->mnId;
+
             }
         }
         else
         {
             if(leftIndex != -1){
                 pKF->EraseMapPointMatch(leftIndex);
+                LOG(INFO)<<"erase MP: "<<mnId<<" KF: "<<pKF->mnId;
+
             }
             if(rightIndex != -1){
                 pKF->EraseMapPointMatch(rightIndex);
+                LOG(INFO)<<"erase MP: "<<mnId<<" KF: "<<pKF->mnId;
+
             }
         }
     }
@@ -447,7 +464,7 @@ void MapPoint::UpdateNormalAndDepth()
     for(map<KeyFrame*,tuple<int,int>>::iterator mit=observations.begin(), mend=observations.end(); mit!=mend; mit++)
     {
         KeyFrame* pKF = mit->first;
-
+        assert(std::find(pKF->mvpMapPoints.begin(),pKF->mvpMapPoints.end(),this)!=pKF->mvpMapPoints.end());
         tuple<int,int> indexes = mit -> second;
         int leftIndex = get<0>(indexes), rightIndex = get<1>(indexes);
 
