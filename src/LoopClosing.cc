@@ -1128,7 +1128,6 @@ void LoopClosing::CorrectLoop()
                 {
                     mpCurrentKF->AddMapPoint(pLoopMP,i);
                     pLoopMP->AddObservation(mpCurrentKF,i);
-                    LOG(INFO)<<"add MP: "<<pLoopMP->mnId<<" KF: "<<mpCurrentKF->mnId;
 
                     pLoopMP->ComputeDistinctiveDescriptors();
                 }

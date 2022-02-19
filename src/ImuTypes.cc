@@ -273,6 +273,26 @@ void Preintegrated::SetNewBias(const Bias &bu_)
     db(5) = bu_.baz-b.baz;
 }
 
+void Preintegrated::Reset() {
+    mvMeasurements.clear();
+    db.setZero();
+    b = IMU::Bias();
+    dR.setZero();
+    dV.setZero();
+    dP.setZero();
+    JRg.setZero();
+    JVg.setZero();
+    JVa.setZero();
+    JPg.setZero();
+    JPa.setZero();
+    avgA.setZero();
+    avgW.setZero();
+    C.setZero();
+    Info.setZero();
+    Nga.setZero();
+    NgaWalk.setZero();
+}
+
 IMU::Bias Preintegrated::GetDeltaBias(const Bias &b_)
 {
     std::unique_lock<std::mutex> lock(mMutex);

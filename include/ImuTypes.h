@@ -180,6 +180,7 @@ public:
     void Reintegrate();
     void MergePrevious(Preintegrated* pPrev);
     void SetNewBias(const Bias &bu_);
+    void Reset();
     IMU::Bias GetDeltaBias(const Bias &b_);
 
     Eigen::Matrix3f GetDeltaRotation(const Bias &b_);

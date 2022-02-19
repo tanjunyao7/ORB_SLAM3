@@ -232,8 +232,6 @@ void MapPoint::SetBadFlag()
         int leftIndex = get<0>(mit -> second), rightIndex = get<1>(mit -> second);
         if(leftIndex != -1){
             pKF->EraseMapPointMatch(leftIndex);
-            LOG(INFO)<<"erase MP: "<<mnId<<" KF: "<<pKF->mnId;
-
         }
         if(rightIndex != -1){
             pKF->EraseMapPointMatch(rightIndex);
@@ -243,6 +241,7 @@ void MapPoint::SetBadFlag()
     }
 
     mpMap->EraseMapPoint(this);
+    ReleaseData();
 }
 
 MapPoint* MapPoint::GetReplaced()
@@ -283,15 +282,11 @@ void MapPoint::Replace(MapPoint* pMP)
             if(leftIndex != -1){
                 pKF->ReplaceMapPointMatch(leftIndex, pMP);
                 pMP->AddObservation(pKF,leftIndex);
-                LOG(INFO)<<"erase MP: "<<mnId<<" KF: "<<pKF->mnId;
-                LOG(INFO)<<"add MP: "<<pMP->mnId<<" KF: "<<pKF->mnId;
 
             }
             if(rightIndex != -1){
                 pKF->ReplaceMapPointMatch(rightIndex, pMP);
                 pMP->AddObservation(pKF,rightIndex);
-                LOG(INFO)<<"erase MP: "<<mnId<<" KF: "<<pKF->mnId;
-                LOG(INFO)<<"add MP: "<<pMP->mnId<<" KF: "<<pKF->mnId;
 
             }
         }
@@ -299,13 +294,9 @@ void MapPoint::Replace(MapPoint* pMP)
         {
             if(leftIndex != -1){
                 pKF->EraseMapPointMatch(leftIndex);
-                LOG(INFO)<<"erase MP: "<<mnId<<" KF: "<<pKF->mnId;
-
             }
             if(rightIndex != -1){
                 pKF->EraseMapPointMatch(rightIndex);
-                LOG(INFO)<<"erase MP: "<<mnId<<" KF: "<<pKF->mnId;
-
             }
         }
     }
@@ -323,6 +314,19 @@ bool MapPoint::isBad()
     lock(lock1, lock2);
 
     return mbBad;
+}
+
+void MapPoint::ReleaseData()
+{
+    {
+        unique_lock<mutex> lock(mMutexFeatures);
+        mObservations.clear();
+        mDescriptor.release();
+    }
+
+    mBackupObservationsId1.clear();
+    mBackupObservationsId2.clear();
+
 }
 
 void MapPoint::IncreaseVisible(int n)

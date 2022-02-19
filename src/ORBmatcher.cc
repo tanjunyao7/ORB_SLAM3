@@ -74,6 +74,7 @@ namespace ORB_SLAM3
 
                 if(!vIndices.empty()){
                     const cv::Mat MPdescriptor = pMP->GetDescriptor();
+                    LOG_IF(FATAL,MPdescriptor.empty());
 
                     int bestDist=256;
                     int bestLevel= -1;
@@ -154,6 +155,8 @@ namespace ORB_SLAM3
                         continue;
 
                     const cv::Mat MPdescriptor = pMP->GetDescriptor();
+                    LOG_IF(FATAL,MPdescriptor.empty());
+
 
                     int bestDist=256;
                     int bestLevel= -1;
@@ -496,6 +499,8 @@ namespace ORB_SLAM3
 
             // Match to the most similar keypoint in the radius
             const cv::Mat dMP = pMP->GetDescriptor();
+            LOG_IF(FATAL,dMP.empty());
+
 
             int bestDist = 256;
             int bestIdx = -1;
@@ -609,6 +614,7 @@ namespace ORB_SLAM3
 
             // Match to the most similar keypoint in the radius
             const cv::Mat dMP = pMP->GetDescriptor();
+            LOG_IF(FATAL,dMP.empty());
 
             int bestDist = 256;
             int bestIdx = -1;
@@ -1255,6 +1261,7 @@ namespace ORB_SLAM3
             // Match to the most similar keypoint in the radius
 
             const cv::Mat dMP = pMP->GetDescriptor();
+            LOG_IF(FATAL,dMP.empty());
 
             int bestDist = 256;
             int bestIdx = -1;
@@ -1327,8 +1334,6 @@ namespace ORB_SLAM3
                 {
                     pMP->AddObservation(pKF,bestIdx);
                     pKF->AddMapPoint(pMP,bestIdx);
-                    LOG(INFO)<<"add MP: "<<pMP->mnId<<" KF: "<<pKF->mnId;
-
                 }
                 nFused++;
             }
@@ -1414,6 +1419,7 @@ namespace ORB_SLAM3
             // Match to the most similar keypoint in the radius
 
             const cv::Mat dMP = pMP->GetDescriptor();
+            LOG_IF(FATAL,dMP.empty());
 
             int bestDist = INT_MAX;
             int bestIdx = -1;
@@ -1449,7 +1455,6 @@ namespace ORB_SLAM3
                 {
                     pMP->AddObservation(pKF,bestIdx);
                     pKF->AddMapPoint(pMP,bestIdx);
-                    LOG(INFO)<<"add MP: "<<pMP->mnId<<" KF: "<<pKF->mnId;
                 }
                 nFused++;
             }
@@ -1547,6 +1552,8 @@ namespace ORB_SLAM3
 
             // Match to the most similar keypoint in the radius
             const cv::Mat dMP = pMP->GetDescriptor();
+            LOG_IF(FATAL,dMP.empty());
+
 
             int bestDist = INT_MAX;
             int bestIdx = -1;
@@ -1627,6 +1634,8 @@ namespace ORB_SLAM3
 
             // Match to the most similar keypoint in the radius
             const cv::Mat dMP = pMP->GetDescriptor();
+            LOG_IF(FATAL,dMP.empty());
+
 
             int bestDist = INT_MAX;
             int bestIdx = -1;
@@ -1699,7 +1708,7 @@ namespace ORB_SLAM3
         for(int i=0; i<LastFrame.N; i++)
         {
             MapPoint* pMP = LastFrame.mvpMapPoints[i];
-            if(pMP)
+            if(pMP && !pMP->isBad())
             {
                 if(!LastFrame.mvbOutlier[i])
                 {
@@ -1740,6 +1749,8 @@ namespace ORB_SLAM3
                         continue;
 
                     const cv::Mat dMP = pMP->GetDescriptor();
+                    LOG_IF(FATAL,dMP.empty());
+
 
                     int bestDist = 256;
                     int bestIdx2 = -1;
@@ -1815,6 +1826,8 @@ namespace ORB_SLAM3
                             vIndices2 = CurrentFrame.GetFeaturesInArea(uv(0),uv(1), radius, nLastOctave-1, nLastOctave+1, true);
 
                         const cv::Mat dMP = pMP->GetDescriptor();
+                        LOG_IF(FATAL,dMP.empty());
+
 
                         int bestDist = 256;
                         int bestIdx2 = -1;
@@ -1946,6 +1959,7 @@ namespace ORB_SLAM3
                         continue;
 
                     const cv::Mat dMP = pMP->GetDescriptor();
+                    LOG_IF(FATAL,dMP.empty());
 
                     int bestDist = 256;
                     int bestIdx2 = -1;

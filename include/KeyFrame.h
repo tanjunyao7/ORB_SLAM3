@@ -303,6 +303,8 @@ public:
     void SetORBVocabulary(ORBVocabulary* pORBVoc);
     void SetKeyFrameDatabase(KeyFrameDatabase* pKFDB);
 
+    void ReleaseData();
+
     bool bImu;
 
     // The following variables are accesed from only 1 thread or never change (no mutex needed).
@@ -381,11 +383,11 @@ public:
     std::vector<MapPoint*> mvpMapPoints;
 
     // KeyPoints, stereo coordinate and descriptors (all associated by an index)
-    const std::vector<cv::KeyPoint> mvKeys;
-    const std::vector<cv::KeyPoint> mvKeysUn;
-    const std::vector<float> mvuRight; // negative value for monocular points
-    const std::vector<float> mvDepth; // negative value for monocular points
-    const cv::Mat mDescriptors;
+    std::vector<cv::KeyPoint> mvKeys;
+    std::vector<cv::KeyPoint> mvKeysUn;
+    std::vector<float> mvuRight; // negative value for monocular points
+    std::vector<float> mvDepth; // negative value for monocular points
+    cv::Mat mDescriptors;
 
     //BoW
     DBoW2::BowVector mBowVec;
@@ -513,7 +515,7 @@ public:
     Sophus::SE3f GetRelativePoseTlr();
 
     //KeyPoints in the right image (for stereo fisheye, coordinates are needed)
-    const std::vector<cv::KeyPoint> mvKeysRight;
+    std::vector<cv::KeyPoint> mvKeysRight;
 
     const int NLeft, NRight;
 

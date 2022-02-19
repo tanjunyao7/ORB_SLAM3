@@ -23,7 +23,6 @@
 #include "Optimizer.h"
 #include "Converter.h"
 #include "GeometricTools.h"
-#include "GarbageCollector.h"
 
 #include<mutex>
 #include<chrono>
@@ -192,7 +191,7 @@ void LocalMapping::Run()
 
                 // Check redundant local Keyframes
                 KeyFrameCulling();
-                
+
 
 #ifdef REGISTER_TIMES
                 std::chrono::steady_clock::time_point time_EndKFCulling = std::chrono::steady_clock::now();
@@ -1039,7 +1038,6 @@ void LocalMapping::KeyFrameCulling()
                         pKF->mNextKF = NULL;
                         pKF->mPrevKF = NULL;
                         pKF->SetBadFlag();
-                        PrepareForDeleting<KeyFrame,2>(pKF,std::this_thread::get_id());
                     }
                     else if(!mpCurrentKeyFrame->GetMap()->GetIniertialBA2() && ((pKF->GetImuPosition()-pKF->mPrevKF->GetImuPosition()).norm()<0.02) && (t<3))
                     {
@@ -1049,14 +1047,12 @@ void LocalMapping::KeyFrameCulling()
                         pKF->mNextKF = NULL;
                         pKF->mPrevKF = NULL;
                         pKF->SetBadFlag();
-                        PrepareForDeleting<KeyFrame,2>(pKF,std::this_thread::get_id());
                     }
                 }
             }
             else
             {
                 pKF->SetBadFlag();
-                PrepareForDeleting<KeyFrame,2>(pKF,std::this_thread::get_id());
             }
         }
         if((count > 20 && mbAbortBA) || count>100)

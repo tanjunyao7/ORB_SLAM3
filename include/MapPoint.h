@@ -160,6 +160,7 @@ public:
     void PreSave(set<KeyFrame*>& spKF,set<MapPoint*>& spMP);
     void PostLoad(map<long unsigned int, KeyFrame*>& mpKFid, map<long unsigned int, MapPoint*>& mpMPid);
 
+    void ReleaseData();
 public:
     long unsigned int mnId;
     static long unsigned int nNextId;

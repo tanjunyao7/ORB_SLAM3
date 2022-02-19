@@ -77,9 +77,6 @@ KeyFrame::KeyFrame(Frame &F, Map *pMap, KeyFrameDatabase *pKFDB):
             }
         }
     }
-    for(int i=0;i<mvpMapPoints.size();i++)
-        if(mvpMapPoints[i])
-            LOG(INFO)<<" KEYFRAME "<<mnId<<" add "<<" MP: "<<mvpMapPoints[i]->mnId;
 
 
 
@@ -303,13 +300,11 @@ void KeyFrame::AddMapPoint(MapPoint *pMP, const size_t &idx)
 {
     unique_lock<mutex> lock(mMutexFeatures);
     mvpMapPoints[idx]=pMP;
-    LOG(INFO)<<" KEYFRAME "<<mnId<<" add "<<" MP: "<<pMP->mnId;
 }
 
 void KeyFrame::EraseMapPointMatch(const int &idx)
 {
     unique_lock<mutex> lock(mMutexFeatures);
-    LOG(INFO)<<" KEYFRAME "<<mnId<<" erase "<<" MP: "<<mvpMapPoints[idx]->mnId;
 
     mvpMapPoints[idx]=static_cast<MapPoint*>(NULL);
 
@@ -321,26 +316,18 @@ void KeyFrame::EraseMapPointMatch(MapPoint* pMP)
     size_t leftIndex = get<0>(indexes), rightIndex = get<1>(indexes);
 
     if(leftIndex != -1)
-    {
-        LOG(INFO)<<" KEYFRAME "<<mnId<<" erase "<<" MP: "<<mvpMapPoints[leftIndex]->mnId;
         mvpMapPoints[leftIndex]=static_cast<MapPoint*>(NULL);
-    }
+
 
     if(rightIndex != -1)
-    {
-        LOG(INFO)<<" KEYFRAME "<<mnId<<" erase "<<" MP: "<<mvpMapPoints[rightIndex]->mnId;
         mvpMapPoints[rightIndex]=static_cast<MapPoint*>(NULL);
 
-    }
 }
 
 
 void KeyFrame::ReplaceMapPointMatch(const int &idx, MapPoint* pMP)
 {
-    LOG(INFO)<<" KEYFRAME "<<mnId<<" erase "<<" MP: "<<mvpMapPoints[idx]->mnId;
     mvpMapPoints[idx]=pMP;
-    LOG(INFO)<<" KEYFRAME "<<mnId<<" add "<<" MP: "<<mvpMapPoints[idx]->mnId;
-
 }
 
 set<MapPoint*> KeyFrame::GetMapPoints()
@@ -618,6 +605,7 @@ void KeyFrame::SetBadFlag()
             mvpMapPoints[i]->EraseObservation(this);
         }
     }
+    mvpMapPoints.clear();
 
     {
         unique_lock<mutex> lock(mMutexConnections);
@@ -697,6 +685,53 @@ void KeyFrame::SetBadFlag()
 
     mpMap->EraseKeyFrame(this);
     mpKeyFrameDB->erase(this);
+    ReleaseData();
+}
+
+void KeyFrame::ReleaseData() {
+    mvKeys.clear();
+    mvKeysUn.clear();
+    mvuRight.clear();
+    mvDepth.clear(); // negative value for monocular points
+    mDescriptors.release();
+
+    mBowVec.clear();
+    mFeatVec.clear();
+
+    delete mpImuPreintegrated;
+    mpImuPreintegrated = nullptr;
+
+    mvpLoopCandKFs.clear();
+    mvpMergeCandKFs.clear();
+
+    mvBackupMapPointsId.clear();
+
+    mGrid.clear();
+
+    mConnectedKeyFrameWeights.clear();
+    mvpOrderedConnectedKeyFrames.clear();
+    mvOrderedWeights.clear();
+    {
+        unique_lock<mutex> lock(mMutexFeatures);
+        mvpMapPoints.clear();
+    }
+
+
+    mBackupConnectedKeyFrameIdWeights.clear();
+
+    mspChildrens.clear();
+    mspLoopEdges.clear();
+    mspMergeEdges.clear();
+    mvBackupChildrensId.clear();
+    mvBackupLoopEdgesId.clear();
+    mvBackupMergeEdgesId.clear();
+
+    mBackupImuPreintegrated.Reset();
+    mvLeftToRightMatch.clear();
+    mvRightToLeftMatch.clear();
+
+    mvKeysRight.clear();
+    mGridRight.clear();
 }
 
 bool KeyFrame::isBad()
