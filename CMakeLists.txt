@@ -4,6 +4,7 @@ project(ORB_SLAM3)
 IF(NOT CMAKE_BUILD_TYPE)
   SET(CMAKE_BUILD_TYPE Release)
 ENDIF()
+SET(CMAKE_BUILD_TYPE Debug)
 
 MESSAGE("Build type: " ${CMAKE_BUILD_TYPE})
 
@@ -30,7 +31,7 @@ endif()
 
 LIST(APPEND CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake_modules)
 
-find_package(OpenCV 4.4)
+find_package(OpenCV)
    if(NOT OpenCV_FOUND)
       message(FATAL_ERROR "OpenCV > 4.4 not found.")
    endif()
@@ -47,6 +48,7 @@ ${PROJECT_SOURCE_DIR}
 ${PROJECT_SOURCE_DIR}/include
 ${PROJECT_SOURCE_DIR}/include/CameraModels
 ${PROJECT_SOURCE_DIR}/Thirdparty/Sophus
+        ${PROJECT_SOURCE_DIR}/Thirdparty/glog/src
 ${EIGEN3_INCLUDE_DIR}
 ${Pangolin_INCLUDE_DIRS}
 )
@@ -114,6 +116,7 @@ include/Config.h
 include/Settings.h)
 
 add_subdirectory(Thirdparty/g2o)
+add_subdirectory(Thirdparty/glog)
 
 target_link_libraries(${PROJECT_NAME}
 ${OpenCV_LIBS}
@@ -123,6 +126,7 @@ ${PROJECT_SOURCE_DIR}/Thirdparty/DBoW2/lib/libDBoW2.so
 ${PROJECT_SOURCE_DIR}/Thirdparty/g2o/lib/libg2o.so
 -lboost_serialization
 -lcrypto
+        glog
 )
 
 # If RealSense SDK is found the library is added and its examples compiled
@@ -159,6 +163,10 @@ if(realsense2_FOUND)
     add_executable(rgbd_inertial_realsense_D435i
             Examples/RGB-D-Inertial/rgbd_inertial_realsense_D435i.cc)
     target_link_libraries(rgbd_inertial_realsense_D435i ${PROJECT_NAME})
+
+    add_executable(rgbd_inertial_realsense_D455_bag
+            Examples/RGB-D-Inertial/rgbd_inertial_realsense_D455_bag.cc)
+    target_link_libraries(rgbd_inertial_realsense_D455_bag ${PROJECT_NAME})
 endif()
 
 #Stereo examples
