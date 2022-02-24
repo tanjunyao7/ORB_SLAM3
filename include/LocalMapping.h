@@ -189,6 +189,7 @@ protected:
     int mNumKFCulling;
 
     float mTinit;
+    float mDinit;
 
     int countRefinement;
 

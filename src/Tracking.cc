@@ -1549,8 +1549,6 @@ Sophus::SE3f Tracking::GrabImageRGBD(const cv::Mat &imRGB,const cv::Mat &imD, co
 
 
 
-
-
     mCurrentFrame.mNameFile = filename;
     mCurrentFrame.mnDataset = mnNumDataset;
 
@@ -1624,111 +1622,69 @@ void Tracking::GrabImuData(const IMU::Point &imuMeasurement)
 
 void Tracking::PreintegrateIMU()
 {
-
-    if(!mCurrentFrame.mpPrevFrame)
-    {
-        Verbose::PrintMess("non prev frame ", Verbose::VERBOSITY_NORMAL);
-        mCurrentFrame.setIntegrated();
-        return;
-    }
+    assert(mCurrentFrame.mpPrevFrame);
 
     mvImuFromLastFrame.clear();
     mvImuFromLastFrame.reserve(mlQueueImuData.size());
-    if(mlQueueImuData.size() == 0)
-    {
-        Verbose::PrintMess("Not IMU data in mlQueueImuData!!", Verbose::VERBOSITY_NORMAL);
-        mCurrentFrame.setIntegrated();
-        return;
-    }
 
+    IMU::Preintegrated* pImuPreintegratedFromLastFrame = new IMU::Preintegrated(mLastFrame.mImuBias,mCurrentFrame.mImuCalib);
     while(true)
     {
         bool bSleep = false;
         {
             unique_lock<mutex> lock(mMutexImuQueue);
-            if(!mlQueueImuData.empty())
-            {
-                IMU::Point* m = &mlQueueImuData.front();
-                cout.precision(17);
-                if(m->t<mCurrentFrame.mpPrevFrame->mTimeStamp-mImuPer)
-                {
-                    mlQueueImuData.pop_front();
-                }
-                else if(m->t<mCurrentFrame.mTimeStamp-mImuPer)
-                {
-                    mvImuFromLastFrame.push_back(*m);
-                    mlQueueImuData.pop_front();
-                }
-                else
-                {
-                    mvImuFromLastFrame.push_back(*m);
-                    break;
-                }
-            }
-            else
-            {
-                break;
+            if(mlQueueImuData.empty() || mlQueueImuData.back().t<mCurrentFrame.mTimeStamp)
                 bSleep = true;
+
+            else if(mlQueueImuData.front().t>mCurrentFrame.mTimeStamp)
+            {
+                LOG(INFO)<<"imu data from "<<std::to_string(mCurrentFrame.mpPrevFrame->mTimeStamp)<<" to "
+                <<std::to_string(mCurrentFrame.mTimeStamp)<<" is missing";
+                LOG(INFO)<<"use imu data at "<<std::to_string(mLastImuData.t);
+                auto a = mLastImuData.a;
+                auto w = mLastImuData.w;
+                double dt = mCurrentFrame.mTimeStamp-mCurrentFrame.mpPrevFrame->mTimeStamp;
+                mpImuPreintegratedFromLastKF->IntegrateNewMeasurement(a,w,dt);
+                pImuPreintegratedFromLastFrame->IntegrateNewMeasurement(a,w,dt);
+                break;
             }
+            else{
+                assert(mlQueueImuData.front().t<mCurrentFrame.mTimeStamp);
+                assert(mlQueueImuData.back().t>mCurrentFrame.mTimeStamp);
+                double previous_time = mCurrentFrame.mpPrevFrame->mTimeStamp;
+                Eigen::Vector3f a,w;
+                double dt;
+                mLastImuData.t = mCurrentFrame.mpPrevFrame->mTimeStamp;
+                while(mlQueueImuData.front().t<mCurrentFrame.mTimeStamp)
+                {
+                    a = mlQueueImuData.front().a;
+                    w = mlQueueImuData.front().w;
+                    dt = mlQueueImuData.front().t-mLastImuData.t;
+                    mpImuPreintegratedFromLastKF->IntegrateNewMeasurement(a,w,dt);
+                    pImuPreintegratedFromLastFrame->IntegrateNewMeasurement(a,w,dt);
+                    mLastImuData = mlQueueImuData.front();
+                    mlQueueImuData.pop_front();
+                }
+                dt = mCurrentFrame.mTimeStamp-mLastImuData.t;
+                mpImuPreintegratedFromLastKF->IntegrateNewMeasurement(a,w,dt);
+                pImuPreintegratedFromLastFrame->IntegrateNewMeasurement(a,w,dt);
+                mLastImuData.t = mCurrentFrame.mTimeStamp;
+                break;
+            }
+
         }
         if(bSleep)
             usleep(500);
     }
-
-    const int n = mvImuFromLastFrame.size()-1;
-    if(n==0){
-        cout << "Empty IMU measurements vector!!!\n";
-        return;
-    }
-
-    IMU::Preintegrated* pImuPreintegratedFromLastFrame = new IMU::Preintegrated(mLastFrame.mImuBias,mCurrentFrame.mImuCalib);
-
-    for(int i=0; i<n; i++)
-    {
-        float tstep;
-        Eigen::Vector3f acc, angVel;
-        if((i==0) && (i<(n-1)))
-        {
-            float tab = mvImuFromLastFrame[i+1].t-mvImuFromLastFrame[i].t;
-            float tini = mvImuFromLastFrame[i].t-mCurrentFrame.mpPrevFrame->mTimeStamp;
-            acc = (mvImuFromLastFrame[i].a+mvImuFromLastFrame[i+1].a-
-                    (mvImuFromLastFrame[i+1].a-mvImuFromLastFrame[i].a)*(tini/tab))*0.5f;
-            angVel = (mvImuFromLastFrame[i].w+mvImuFromLastFrame[i+1].w-
-                    (mvImuFromLastFrame[i+1].w-mvImuFromLastFrame[i].w)*(tini/tab))*0.5f;
-            tstep = mvImuFromLastFrame[i+1].t-mCurrentFrame.mpPrevFrame->mTimeStamp;
-        }
-        else if(i<(n-1))
-        {
-            acc = (mvImuFromLastFrame[i].a+mvImuFromLastFrame[i+1].a)*0.5f;
-            angVel = (mvImuFromLastFrame[i].w+mvImuFromLastFrame[i+1].w)*0.5f;
-            tstep = mvImuFromLastFrame[i+1].t-mvImuFromLastFrame[i].t;
-        }
-        else if((i>0) && (i==(n-1)))
-        {
-            float tab = mvImuFromLastFrame[i+1].t-mvImuFromLastFrame[i].t;
-            float tend = mvImuFromLastFrame[i+1].t-mCurrentFrame.mTimeStamp;
-            acc = (mvImuFromLastFrame[i].a+mvImuFromLastFrame[i+1].a-
-                    (mvImuFromLastFrame[i+1].a-mvImuFromLastFrame[i].a)*(tend/tab))*0.5f;
-            angVel = (mvImuFromLastFrame[i].w+mvImuFromLastFrame[i+1].w-
-                    (mvImuFromLastFrame[i+1].w-mvImuFromLastFrame[i].w)*(tend/tab))*0.5f;
-            tstep = mCurrentFrame.mTimeStamp-mvImuFromLastFrame[i].t;
-        }
-        else if((i==0) && (i==(n-1)))
-        {
-            acc = mvImuFromLastFrame[i].a;
-            angVel = mvImuFromLastFrame[i].w;
-            tstep = mCurrentFrame.mTimeStamp-mCurrentFrame.mpPrevFrame->mTimeStamp;
-        }
-
-        if (!mpImuPreintegratedFromLastKF)
-            cout << "mpImuPreintegratedFromLastKF does not exist" << endl;
-        mpImuPreintegratedFromLastKF->IntegrateNewMeasurement(acc,angVel,tstep);
-        pImuPreintegratedFromLastFrame->IntegrateNewMeasurement(acc,angVel,tstep);
-    }
+    LOG_IF(FATAL,pImuPreintegratedFromLastFrame->dT<0.001);
 
     mCurrentFrame.mpImuPreintegratedFrame = pImuPreintegratedFromLastFrame;
     mCurrentFrame.mpImuPreintegrated = mpImuPreintegratedFromLastKF;
     mCurrentFrame.mpLastKeyFrame = mpLastKeyFrame;
+    LOG_IF(FATAL,fabs(mCurrentFrame.mpImuPreintegrated->dT+mpLastKeyFrame->mTimeStamp-mCurrentFrame.mTimeStamp)>0.001)
+    <<std::to_string(mpLastKeyFrame->mTimeStamp)<<" "<<std::to_string(mCurrentFrame.mTimeStamp)<<" "<<mCurrentFrame.mpImuPreintegrated->dT;
+    LOG_IF(FATAL,fabs(mCurrentFrame.mpImuPreintegratedFrame->dT+mCurrentFrame.mpPrevFrame->mTimeStamp-mCurrentFrame.mTimeStamp)>0.001)
+    <<std::to_string(mCurrentFrame.mpPrevFrame->mTimeStamp)<<" "<<std::to_string(mCurrentFrame.mTimeStamp)<<" "<<mCurrentFrame.mpImuPreintegratedFrame->dT;
 
     mCurrentFrame.setIntegrated();
 
@@ -1818,15 +1774,10 @@ void Tracking::Track()
 
     if(mState!=NO_IMAGES_YET)
     {
-        if(mLastFrame.mTimeStamp>mCurrentFrame.mTimeStamp)
-        {
-            cerr << "ERROR: Frame with a timestamp older than previous frame detected!" << endl;
-            unique_lock<mutex> lock(mMutexImuQueue);
-            mlQueueImuData.clear();
-            CreateMapInAtlas();
-            return;
-        }
-        else if(mCurrentFrame.mTimeStamp>mLastFrame.mTimeStamp+1.0)
+        LOG_IF(FATAL,mLastFrame.mTimeStamp>mCurrentFrame.mTimeStamp-0.001)<<"images in disorder, last image time: "
+        <<std::to_string(mLastFrame.mTimeStamp)<<" current image time: "<<std::to_string(mCurrentFrame.mTimeStamp);
+
+        if(mCurrentFrame.mTimeStamp>mLastFrame.mTimeStamp+1.0)
         {
             // cout << mCurrentFrame.mTimeStamp << ", " << mLastFrame.mTimeStamp << endl;
             // cout << "id last: " << mLastFrame.mnId << "    id curr: " << mCurrentFrame.mnId << endl;
@@ -1835,7 +1786,7 @@ void Tracking::Track()
 
                 if(mpAtlas->isImuInitialized())
                 {
-                    cout << "Timestamp jump detected. State set to LOST. Reseting IMU integration..." << endl;
+                    LOG(INFO) << "Timestamp jump detected. State set to LOST. Reseting IMU integration..." << endl;
                     if(!pCurrentMap->GetIniertialBA2())
                     {
                         mpSystem->ResetActiveMap();
@@ -1847,7 +1798,7 @@ void Tracking::Track()
                 }
                 else
                 {
-                    cout << "Timestamp jump detected, before IMU initialization. Reseting..." << endl;
+                    LOG(INFO) << "Timestamp jump detected, before IMU initialization. Reseting..." << endl;
                     mpSystem->ResetActiveMap();
                 }
                 return;
@@ -1867,7 +1818,7 @@ void Tracking::Track()
 
     mLastProcessedState=mState;
 
-    if ((mSensor == System::IMU_MONOCULAR || mSensor == System::IMU_STEREO || mSensor == System::IMU_RGBD) && !mbCreatedMap)
+    if ((mSensor == System::IMU_MONOCULAR || mSensor == System::IMU_STEREO || mSensor == System::IMU_RGBD) && !mbCreatedMap && mpLastKeyFrame)
     {
 #ifdef REGISTER_TIMES
         std::chrono::steady_clock::time_point time_StartPreIMU = std::chrono::steady_clock::now();
@@ -2339,23 +2290,23 @@ void Tracking::StereoInitialization()
     {
         if (mSensor == System::IMU_STEREO || mSensor == System::IMU_RGBD)
         {
-            if (!mCurrentFrame.mpImuPreintegrated || !mLastFrame.mpImuPreintegrated)
-            {
-                cout << "not IMU meas" << endl;
-                return;
-            }
+//            if (!mCurrentFrame.mpImuPreintegrated || !mLastFrame.mpImuPreintegrated)
+//            {
+//                cout << "not IMU meas" << endl;
+//                return;
+//            }
 
-            if (!mFastInit && (mCurrentFrame.mpImuPreintegratedFrame->avgA-mLastFrame.mpImuPreintegratedFrame->avgA).norm()<0.5)
-            {
-                cout << "not enough acceleration" << endl;
-                return;
-            }
+//            if (!mFastInit && (mCurrentFrame.mpImuPreintegratedFrame->avgA-mLastFrame.mpImuPreintegratedFrame->avgA).norm()<0.5)
+//            {
+//                cout << "not enough acceleration" << endl;
+//                return;
+//            }
 
             if(mpImuPreintegratedFromLastKF)
                 delete mpImuPreintegratedFromLastKF;
 
             mpImuPreintegratedFromLastKF = new IMU::Preintegrated(IMU::Bias(),*mpImuCalib);
-            mCurrentFrame.mpImuPreintegrated = mpImuPreintegratedFromLastKF;
+//            mCurrentFrame.mpImuPreintegrated = mpImuPreintegratedFromLastKF;
         }
 
         // Set Frame pose to the origin (In case of inertial SLAM to imu)
@@ -2860,7 +2811,7 @@ bool Tracking::TrackWithMotionModel()
     // Create "visual odometry" points if in Localization Mode
     UpdateLastFrame();
 
-    if (mpAtlas->isImuInitialized() && (mCurrentFrame.mnId>mnLastRelocFrameId+mnFramesToResetIMU))
+    if (mCurrentFrame.imuIsPreintegrated() && mpAtlas->isImuInitialized() && (mCurrentFrame.mnId>mnLastRelocFrameId+mnFramesToResetIMU))
     {
         // Predict state with IMU if it is initialized and it doesnt need reset
         PredictStateIMU();
@@ -2949,7 +2900,6 @@ bool Tracking::TrackWithMotionModel()
 
 bool Tracking::TrackLocalMap()
 {
-
     // We have an estimation of the camera pose and some map points tracked in the frame.
     // We retrieve the local map and try to find matches to points in the local map.
     mTrackedFr++;
@@ -2972,7 +2922,7 @@ bool Tracking::TrackLocalMap()
         Optimizer::PoseOptimization(&mCurrentFrame);
     else
     {
-        if(mCurrentFrame.mnId<=mnLastRelocFrameId+mnFramesToResetIMU)
+        if(mCurrentFrame.mnId<=mnLastRelocFrameId+mnFramesToResetIMU || !mCurrentFrame.imuIsPreintegrated())
         {
             Verbose::PrintMess("TLM: PoseOptimization ", Verbose::VERBOSITY_DEBUG);
             Optimizer::PoseOptimization(&mCurrentFrame);
@@ -3922,6 +3872,10 @@ void Tracking::ResetActiveMap(bool bLocMap)
     mvIniMatches.clear();
 
     mbVelocity = false;
+
+    if(mpImuPreintegratedFromLastKF)
+        delete mpImuPreintegratedFromLastKF;
+    mpImuPreintegratedFromLastKF = nullptr;
 
     if(mpViewer)
         mpViewer->Release();

@@ -24,6 +24,7 @@
 #include<opencv2/core/core.hpp>
 
 #include<System.h>
+#include "MemoryMonitor.h"
 
 using namespace std;
 
@@ -80,7 +81,7 @@ int main(int argc, char **argv)
     int fps = 20;
     float dT = 1.f/fps;
     // Create SLAM system. It initializes all system threads and gets ready to process frames.
-    ORB_SLAM3::System SLAM(argv[1],argv[2],ORB_SLAM3::System::MONOCULAR, false);
+    ORB_SLAM3::System SLAM(argv[1],argv[2],ORB_SLAM3::System::MONOCULAR, true);
     float imageScale = SLAM.GetImageScale();
 
     double t_resize = 0.f;
@@ -144,6 +145,10 @@ int main(int argc, char **argv)
     #else
             std::chrono::monotonic_clock::time_point t2 = std::chrono::monotonic_clock::now();
     #endif
+            double vm;
+            double rss;
+            getCurrentProcessMemory(vm,rss);
+            cout << "Virtual Memory: " << vm << "\nResident set size: " << rss << endl;
 
 #ifdef REGISTER_TIMES
             t_track = t_resize + std::chrono::duration_cast<std::chrono::duration<double,std::milli> >(t2 - t1).count();

@@ -41,6 +41,7 @@ LocalMapping::LocalMapping(System* pSys, Atlas *pAtlas, const float bMonocular, 
     mbBadImu = false;
 
     mTinit = 0.f;
+    mDinit = 0.f;
 
     mNumLM = 0;
     mNumKFCulling=0;
@@ -130,14 +131,12 @@ void LocalMapping::Run()
 
                     if(mbInertial && mpCurrentKeyFrame->GetMap()->isImuInitialized())
                     {
-                        float dist = (mpCurrentKeyFrame->mPrevKF->GetCameraCenter() - mpCurrentKeyFrame->GetCameraCenter()).norm() +
-                                (mpCurrentKeyFrame->mPrevKF->mPrevKF->GetCameraCenter() - mpCurrentKeyFrame->mPrevKF->GetCameraCenter()).norm();
+                        mDinit += (mpCurrentKeyFrame->mPrevKF->GetCameraCenter() - mpCurrentKeyFrame->GetCameraCenter()).norm();
+                        mTinit += mpCurrentKeyFrame->mTimeStamp - mpCurrentKeyFrame->mPrevKF->mTimeStamp;
 
-                        if(dist>0.05)
-                            mTinit += mpCurrentKeyFrame->mTimeStamp - mpCurrentKeyFrame->mPrevKF->mTimeStamp;
                         if(!mpCurrentKeyFrame->GetMap()->GetIniertialBA2())
                         {
-                            if((mTinit<10.f) && (dist<0.02))
+                            if((mTinit<10.f) && (mDinit<0.02))
                             {
                                 cout << "Not enough motion for initializing. Reseting..." << endl;
                                 unique_lock<mutex> lock(mMutexReset);
@@ -1026,7 +1025,7 @@ void LocalMapping::KeyFrameCulling()
                 if(pKF->mnId>(mpCurrentKeyFrame->mnId-2))
                     continue;
 
-                if(pKF->mPrevKF && pKF->mNextKF)
+                if(pKF->mPrevKF && pKF->mNextKF && pKF->mpImuPreintegrated && pKF->mNextKF->mpImuPreintegrated)
                 {
                     const float t = pKF->mNextKF->mTimeStamp-pKF->mPrevKF->mTimeStamp;
 
@@ -1122,6 +1121,7 @@ void LocalMapping::ResetIfRequested()
 
             // Inertial parameters
             mTinit = 0.f;
+            mDinit = 0.f;
             mbNotBA2 = true;
             mbNotBA1 = true;
             mbBadImu=false;
@@ -1139,6 +1139,7 @@ void LocalMapping::ResetIfRequested()
 
             // Inertial parameters
             mTinit = 0.f;
+            mDinit = 0.f;
             mbNotBA2 = true;
             mbNotBA1 = true;
             mbBadImu=false;
@@ -1260,6 +1261,13 @@ void LocalMapping::InitializeIMU(float priorG, float priorA, bool bFIBA)
         Rwg = Sophus::SO3f::exp(vzg).matrix();
         mRwg = Rwg.cast<double>();
         mTinit = mpCurrentKeyFrame->mTimeStamp-mFirstTs;
+        mDinit = 0;
+        pKF = mpCurrentKeyFrame;
+        while(pKF->mPrevKF)
+        {
+            mDinit += (pKF->GetCameraCenter()-pKF->mPrevKF->GetCameraCenter()).norm();
+            pKF = pKF->mPrevKF;
+        }
     }
     else
     {
@@ -1283,6 +1291,8 @@ void LocalMapping::InitializeIMU(float priorG, float priorA, bool bFIBA)
         bInitializing=false;
         return;
     }
+    LOG(INFO)<<"scale: "<<mScale;
+    LOG(INFO)<<"mRwg: "<<mRwg;
 
     // Before this line we are not changing the map
     {

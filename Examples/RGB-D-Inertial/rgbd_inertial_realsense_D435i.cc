@@ -124,42 +124,42 @@ int main(int argc, char **argv) {
 
     double offset = 0; // ms
 
-    rs2::context ctx;
-    rs2::device_list devices = ctx.query_devices();
-    rs2::device selected_device;
-    if (devices.size() == 0)
-    {
-        std::cerr << "No device connected, please connect a RealSense device" << std::endl;
-        return 0;
-    }
-    else
-        selected_device = devices[0];
+//    rs2::context ctx;
+//    rs2::device_list devices = ctx.query_devices();
+//    rs2::device selected_device;
+//    if (devices.size() == 0)
+//    {
+//        std::cerr << "No device connected, please connect a RealSense device" << std::endl;
+//        return 0;
+//    }
+//    else
+//        selected_device = devices[0];
 
-    std::vector<rs2::sensor> sensors = selected_device.query_sensors();
-    int index = 0;
-    // We can now iterate the sensors and print their names
-    for (rs2::sensor sensor : sensors)
-        if (sensor.supports(RS2_CAMERA_INFO_NAME)) {
-            ++index;
-            if (index == 1) {
-                sensor.set_option(RS2_OPTION_ENABLE_AUTO_EXPOSURE, 1);
-                // sensor.set_option(RS2_OPTION_AUTO_EXPOSURE_LIMIT,50000);
-                sensor.set_option(RS2_OPTION_EMITTER_ENABLED, 1); // emitter on for depth information
-            }
-            // std::cout << "  " << index << " : " << sensor.get_info(RS2_CAMERA_INFO_NAME) << std::endl;
-            get_sensor_option(sensor);
-            if (index == 2){
-                // RGB camera
-                sensor.set_option(RS2_OPTION_ENABLE_AUTO_EXPOSURE,1);
-
-                // sensor.set_option(RS2_OPTION_EXPOSURE,80.f);
-            }
-
-            if (index == 3){
-                sensor.set_option(RS2_OPTION_ENABLE_MOTION_CORRECTION,0);
-            }
-
-        }
+//    std::vector<rs2::sensor> sensors = selected_device.query_sensors();
+//    int index = 0;
+//    // We can now iterate the sensors and print their names
+//    for (rs2::sensor sensor : sensors)
+//        if (sensor.supports(RS2_CAMERA_INFO_NAME)) {
+//            ++index;
+//            if (index == 1) {
+//                sensor.set_option(RS2_OPTION_ENABLE_AUTO_EXPOSURE, 1);
+//                // sensor.set_option(RS2_OPTION_AUTO_EXPOSURE_LIMIT,50000);
+//                sensor.set_option(RS2_OPTION_EMITTER_ENABLED, 1); // emitter on for depth information
+//            }
+//            // std::cout << "  " << index << " : " << sensor.get_info(RS2_CAMERA_INFO_NAME) << std::endl;
+//            get_sensor_option(sensor);
+//            if (index == 2){
+//                // RGB camera
+//                sensor.set_option(RS2_OPTION_ENABLE_AUTO_EXPOSURE,1);
+//
+//                // sensor.set_option(RS2_OPTION_EXPOSURE,80.f);
+//            }
+//
+//            if (index == 3){
+//                sensor.set_option(RS2_OPTION_ENABLE_MOTION_CORRECTION,0);
+//            }
+//
+//        }
 
     // Declare RealSense pipeline, encapsulating the actual device and sensors
     rs2::pipeline pipe;
@@ -167,12 +167,14 @@ int main(int argc, char **argv) {
     // Create a configuration for configuring the pipeline with a non default profile
     rs2::config cfg;
 
+    cfg.enable_device_from_file("/home/tanjunyao7/data/realsense/20220222_232004.bag",false);
+
     // RGB stream
-    cfg.enable_stream(RS2_STREAM_COLOR,640, 480, RS2_FORMAT_RGB8, 30);
+    cfg.enable_stream(RS2_STREAM_COLOR,1280, 720, RS2_FORMAT_RGB8, 30);
 
     // Depth stream
     // cfg.enable_stream(RS2_STREAM_INFRARED, 1, 640, 480, RS2_FORMAT_Y8, 30);
-    cfg.enable_stream(RS2_STREAM_DEPTH,640, 480, RS2_FORMAT_Z16, 30);
+    cfg.enable_stream(RS2_STREAM_DEPTH,848, 480, RS2_FORMAT_Z16, 30);
 
     // IMU stream
     cfg.enable_stream(RS2_STREAM_ACCEL, RS2_FORMAT_MOTION_XYZ32F);

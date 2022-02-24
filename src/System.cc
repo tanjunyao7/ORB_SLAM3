@@ -244,7 +244,22 @@ System::System(const string &strVocFile, const string &strSettingsFile, const eS
 
 }
 
-Sophus::SE3f System::TrackStereo(const cv::Mat &imLeft, const cv::Mat &imRight, const double &timestamp, const vector<IMU::Point>& vImuMeas, string filename)
+void System::GrabImuData(const IMU::Point &imu) {
+    if (mSensor == System::IMU_STEREO ||
+        mSensor == System::IMU_RGBD ||
+        mSensor == System::IMU_MONOCULAR)
+    {
+        mpTracker->GrabImuData(imu);
+    }
+
+    else
+    {
+        LOG(FATAL)<<"cannot grab imu data using this sensor setup";
+    }
+
+}
+
+Sophus::SE3f System::TrackStereo(const cv::Mat &imLeft, const cv::Mat &imRight, const double &timestamp, string filename)
 {
     if(mSensor!=STEREO && mSensor!=IMU_STEREO)
     {
@@ -311,9 +326,6 @@ Sophus::SE3f System::TrackStereo(const cv::Mat &imLeft, const cv::Mat &imRight, 
         }
     }
 
-    if (mSensor == System::IMU_STEREO)
-        for(size_t i_imu = 0; i_imu < vImuMeas.size(); i_imu++)
-            mpTracker->GrabImuData(vImuMeas[i_imu]);
 
     // std::cout << "start GrabImageStereo" << std::endl;
     Sophus::SE3f Tcw = mpTracker->GrabImageStereo(imLeftToFeed,imRightToFeed,timestamp,filename);
@@ -328,7 +340,7 @@ Sophus::SE3f System::TrackStereo(const cv::Mat &imLeft, const cv::Mat &imRight, 
     return Tcw;
 }
 
-Sophus::SE3f System::TrackRGBD(const cv::Mat &im, const cv::Mat &depthmap, const double &timestamp, const vector<IMU::Point>& vImuMeas, string filename)
+Sophus::SE3f System::TrackRGBD(const cv::Mat &im, const cv::Mat &depthmap, const double &timestamp, string filename)
 {
     if(mSensor!=RGBD  && mSensor!=IMU_RGBD)
     {
@@ -386,10 +398,6 @@ Sophus::SE3f System::TrackRGBD(const cv::Mat &im, const cv::Mat &depthmap, const
         }
     }
 
-    if (mSensor == System::IMU_RGBD)
-        for(size_t i_imu = 0; i_imu < vImuMeas.size(); i_imu++)
-            mpTracker->GrabImuData(vImuMeas[i_imu]);
-
     Sophus::SE3f Tcw = mpTracker->GrabImageRGBD(imToFeed,imDepthToFeed,timestamp,filename);
 
     unique_lock<mutex> lock2(mMutexState);
@@ -399,7 +407,7 @@ Sophus::SE3f System::TrackRGBD(const cv::Mat &im, const cv::Mat &depthmap, const
     return Tcw;
 }
 
-Sophus::SE3f System::TrackMonocular(const cv::Mat &im, const double &timestamp, const vector<IMU::Point>& vImuMeas, string filename)
+Sophus::SE3f System::TrackMonocular(const cv::Mat &im, const double &timestamp, string filename)
 {
 
     {
@@ -461,10 +469,6 @@ Sophus::SE3f System::TrackMonocular(const cv::Mat &im, const double &timestamp, 
             mbResetActiveMap = false;
         }
     }
-
-    if (mSensor == System::IMU_MONOCULAR)
-        for(size_t i_imu = 0; i_imu < vImuMeas.size(); i_imu++)
-            mpTracker->GrabImuData(vImuMeas[i_imu]);
 
     Sophus::SE3f Tcw = mpTracker->GrabImageMonocular(imToFeed,timestamp,filename);
 

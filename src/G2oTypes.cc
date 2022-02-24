@@ -591,6 +591,12 @@ void EdgeInertial::linearizeOplus()
     // Jacobians wrt Velocity 2
     _jacobianOplus[5].setZero();
     _jacobianOplus[5].block<3,3>(3,0) = Rbw1; // OK
+    assert(!_jacobianOplus[0].array().isNaN().any());
+    assert(!_jacobianOplus[1].array().isNaN().any());
+    assert(!_jacobianOplus[2].array().isNaN().any());
+    assert(!_jacobianOplus[3].array().isNaN().any());
+    assert(!_jacobianOplus[4].array().isNaN().any());
+    assert(!_jacobianOplus[5].array().isNaN().any());
 }
 
 EdgeInertialGS::EdgeInertialGS(IMU::Preintegrated *pInt):JRg(pInt->JRg.cast<double>()),
